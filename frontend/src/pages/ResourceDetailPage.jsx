@@ -23,22 +23,32 @@ export default function ResourceDetailPage({ resource, user }) {
 
   // ---------- HELPER PARA URL DEL ARCHIVO ----------
   const API_URL = import.meta.env.VITE_API_URL || '';
-  // de "https://unishare-v90p.onrender.com/api" -> "https://unishare-v90p.onrender.com"
-  const BACKEND_BASE_URL = API_URL.replace(/\/api\/?$/, '');
+
+  // si tiene /api lo cortamos, si no, usamos tal cual
+  const BACKEND_BASE_URL = API_URL.includes('/api')
+    ? API_URL.split('/api')[0]
+    : API_URL;
 
   function getFileUrl(fileUrl) {
     if (!fileUrl) return '';
 
-    // si ya viene completa, la dejamos
+    // si ya es URL absoluta, la devolvemos tal cual
     if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
       return fileUrl;
     }
 
-    // normalizar: asegurar "/" inicial
-    let path = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
+    let path = fileUrl;
 
-    // 🔧 fix extra: si viene como "/api/uploads/..." => "/uploads/..."
-    path = path.replace(/^\/api(\/)/, '/');
+    // asegurar que empiece por "/"
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
+
+    // 🔧 FIX DURO: cualquier "/api/uploads" lo convertimos a "/uploads"
+    path = path.replace('/api/uploads', '/uploads');
+
+    // por si viniera "/api/loquesea/uploads", también limpiamos un "/api" inicial
+    path = path.replace(/^\/api\//, '/');
 
     return `${BACKEND_BASE_URL}${path}`;
   }
