@@ -4,7 +4,19 @@ import {
   addComment,
   fetchRating,
   setRating,
+  reportResource,
+  fetchReports,
+  deleteResource,
 } from '../api';
+
+const REPORT_REASONS = [
+  'Contenido ofensivo / abuso verbal',
+  'Contenido sexual inapropiado',
+  'Material incompleto o erróneo',
+  'Spam o publicidad',
+  'Derechos de autor / plagio',
+  'Otro',
+];
 
 export default function ResourceDetailPage({ resource, user }) {
   const [comments, setComments] = useState([]);
@@ -21,10 +33,19 @@ export default function ResourceDetailPage({ resource, user }) {
   const [savingRating, setSavingRating] = useState(false);
   const [hoverRating, setHoverRating] = useState(null);
 
+  // Reportes
+  const [reportReason, setReportReason] = useState(REPORT_REASONS[0]);
+  const [reportDetails, setReportDetails] = useState('');
+  const [reportError, setReportError] = useState('');
+  const [reportSuccess, setReportSuccess] = useState('');
+  const [sendingReport, setSendingReport] = useState(false);
+
+  const [reports, setReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [reportsError, setReportsError] = useState('');
+
   // ---------- HELPER PARA URL DEL ARCHIVO ----------
   const API_URL = import.meta.env.VITE_API_URL || '';
-
-  // si tiene /api lo cortamos, si no, usamos tal cual
   const BACKEND_BASE_URL = API_URL.includes('/api')
     ? API_URL.split('/api')[0]
     : API_URL;
@@ -32,7 +53,7 @@ export default function ResourceDetailPage({ resource, user }) {
   function getFileUrl(fileUrl) {
     if (!fileUrl) return '';
 
-    // si ya es URL absoluta, la devolvemos tal cual
+    // si ya es URL absoluta (por si en el futuro usas Cloudinary)
     if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
       return fileUrl;
     }
@@ -44,10 +65,8 @@ export default function ResourceDetailPage({ resource, user }) {
       path = '/' + path;
     }
 
-    // 🔧 FIX DURO: cualquier "/api/uploads" lo convertimos a "/uploads"
+    // Normalizar bug antiguo: "/api/uploads" -> "/uploads"
     path = path.replace('/api/uploads', '/uploads');
-
-    // por si viniera "/api/loquesea/uploads", también limpiamos un "/api" inicial
     path = path.replace(/^\/api\//, '/');
 
     return `${BACKEND_BASE_URL}${path}`;
@@ -55,7 +74,7 @@ export default function ResourceDetailPage({ resource, user }) {
 
   const finalFileUrl = getFileUrl(resource?.file_url);
 
-  // ---------- CARGA INICIAL ----------
+  // ---------- CARGA INICIAL (comentarios + rating) ----------
   useEffect(() => {
     if (!resource) return;
 
@@ -78,6 +97,27 @@ export default function ResourceDetailPage({ resource, user }) {
 
     load();
   }, [resource?.id]);
+
+  // ---------- CARGA DE REPORTES (solo admin) ----------
+  useEffect(() => {
+    if (!resource || !user || user.role !== 'admin') return;
+
+    const loadReports = async () => {
+      try {
+        setLoadingReports(true);
+        setReportsError('');
+        const data = await fetchReports(resource.id);
+        setReports(data);
+      } catch (err) {
+        console.error('Error al cargar reportes:', err);
+        setReportsError('Error al cargar los reportes de este recurso');
+      } finally {
+        setLoadingReports(false);
+      }
+    };
+
+    loadReports();
+  }, [resource?.id, user?.role]);
 
   if (!resource) {
     return null;
@@ -119,12 +159,73 @@ export default function ResourceDetailPage({ resource, user }) {
   const displayUserRating =
     hoverRating != null ? hoverRating : ratingInfo.userRating;
 
+  // ---------- REPORTAR RECURSO (usuario) ----------
+  async function handleReportSubmit(e) {
+    e.preventDefault();
+    if (!user) {
+      setReportError('Debes iniciar sesión para reportar un recurso.');
+      return;
+    }
+
+    try {
+      setSendingReport(true);
+      setReportError('');
+      setReportSuccess('');
+
+      await reportResource(resource.id, reportReason, reportDetails);
+
+      setReportSuccess('Reporte enviado. Gracias por tu ayuda.');
+      setReportDetails('');
+      setReportReason(REPORT_REASONS[0]);
+    } catch (err) {
+      console.error(err);
+      setReportError('Error al enviar el reporte.');
+    } finally {
+      setSendingReport(false);
+    }
+  }
+
+  // ---------- ELIMINAR RECURSO (admin) ----------
+  async function handleDeleteResource() {
+    if (!user || user.role !== 'admin') return;
+
+    const confirmDelete = window.confirm(
+      '¿Seguro que deseas eliminar este recurso? Esta acción no se puede deshacer.'
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await deleteResource(resource.id);
+      alert('Recurso eliminado correctamente.');
+      // Redirigir a la lista principal (ajusta la ruta si es diferente)
+      window.location.href = '/';
+    } catch (err) {
+      console.error(err);
+      alert('Error al eliminar el recurso.');
+    }
+  }
+
   return (
     <div>
       {/* CABECERA DEL RECURSO */}
       <section className="resource-detail-header">
-        <h2 className="page-title">{resource.title}</h2>
-        <p className="page-subtitle">{resource.description}</p>
+        <div className="resource-header-top">
+          <div>
+            <h2 className="page-title">{resource.title}</h2>
+            <p className="page-subtitle">{resource.description}</p>
+          </div>
+
+          {user?.role === 'admin' && (
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={handleDeleteResource}
+            >
+              Eliminar recurso
+            </button>
+          )}
+        </div>
 
         <div className="resource-meta">
           <p>
@@ -208,6 +309,97 @@ export default function ResourceDetailPage({ resource, user }) {
 
         {ratingError && <p className="text-error">{ratingError}</p>}
       </section>
+
+      {/* REPORTAR RECURSO (USUARIO) */}
+      {user && user.role !== 'admin' && (
+        <section className="report-section">
+          <h3 className="section-title">Reportar recurso</h3>
+          <p className="section-subtitle">
+            Si ves contenido ofensivo, inapropiado o incorrecto, puedes reportarlo.
+          </p>
+
+          <form className="form" onSubmit={handleReportSubmit}>
+            <label className="form-label">
+              Motivo del reporte
+              <select
+                className="form-input"
+                value={reportReason}
+                onChange={e => setReportReason(e.target.value)}
+              >
+                {REPORT_REASONS.map(reason => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="form-label">
+              Detalles (opcional)
+              <textarea
+                className="form-input"
+                rows={3}
+                placeholder="Explica brevemente qué problema encontraste."
+                value={reportDetails}
+                onChange={e => setReportDetails(e.target.value)}
+              />
+            </label>
+
+            {reportError && (
+              <p className="text-error">{reportError}</p>
+            )}
+            {reportSuccess && (
+              <p className="text-success">{reportSuccess}</p>
+            )}
+
+            <button
+              type="submit"
+              className="btn btn-secondary"
+              disabled={sendingReport}
+            >
+              {sendingReport ? 'Enviando...' : 'Enviar reporte'}
+            </button>
+          </form>
+        </section>
+      )}
+
+      {/* REPORTES VISIBLES PARA ADMIN */}
+      {user?.role === 'admin' && (
+        <section className="reports-section">
+          <h3 className="section-title">Reportes de este recurso</h3>
+
+          {loadingReports ? (
+            <p>Cargando reportes...</p>
+          ) : reportsError ? (
+            <p className="text-error">{reportsError}</p>
+          ) : reports.length === 0 ? (
+            <p className="comments-empty">
+              Este recurso no tiene reportes.
+            </p>
+          ) : (
+            <ul className="comments-list">
+              {reports.map(report => (
+                <li key={report.id} className="comment-item">
+                  <div className="comment-header">
+                    <strong>{report.user_full_name || report.user_email || 'Usuario'}</strong>
+                    <span className="comment-date">
+                      {new Date(report.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="comment-content">
+                    <strong>Motivo:</strong> {report.reason}
+                  </p>
+                  {report.details && (
+                    <p className="comment-content">
+                      <strong>Detalles:</strong> {report.details}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {/* COMENTARIOS */}
       <section className="comments-section">

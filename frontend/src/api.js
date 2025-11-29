@@ -214,3 +214,56 @@ export async function fetchUsers() {
     return res.json()
   }
   
+
+  // Reportar recurso
+export async function reportResource(resourceId, reason, details) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/resources/${resourceId}/reports`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+      body: JSON.stringify({ reason, details }),
+    });
+  
+    if (!res.ok) {
+      throw new Error('Error al reportar recurso');
+    }
+  
+    return res.json();
+  }
+  
+  // Obtener reportes de un recurso (solo admin)
+  export async function fetchReports(resourceId) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/resources/${resourceId}/reports`, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    });
+  
+    if (!res.ok) {
+      throw new Error('Error al obtener reportes');
+    }
+  
+    return res.json();
+  }
+  
+  // Eliminar recurso (solo admin)
+  export async function deleteResource(resourceId) {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/resources/${resourceId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    });
+  
+    if (!res.ok) {
+      throw new Error('Error al eliminar recurso');
+    }
+  
+    return res.json();
+  }
+  
