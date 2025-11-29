@@ -28,12 +28,18 @@ export default function ResourceDetailPage({ resource, user }) {
 
   function getFileUrl(fileUrl) {
     if (!fileUrl) return '';
+
     // si ya viene completa, la dejamos
     if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
       return fileUrl;
     }
-    // si viene como "/uploads/xxx.mp4" o "uploads/xxx.mp4"
-    const path = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
+
+    // normalizar: asegurar "/" inicial
+    let path = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
+
+    // 🔧 fix extra: si viene como "/api/uploads/..." => "/uploads/..."
+    path = path.replace(/^\/api(\/)/, '/');
+
     return `${BACKEND_BASE_URL}${path}`;
   }
 
