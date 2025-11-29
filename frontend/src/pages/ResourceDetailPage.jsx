@@ -21,6 +21,24 @@ export default function ResourceDetailPage({ resource, user }) {
   const [savingRating, setSavingRating] = useState(false);
   const [hoverRating, setHoverRating] = useState(null);
 
+  // ---------- HELPER PARA URL DEL ARCHIVO ----------
+  const API_URL = import.meta.env.VITE_API_URL || '';
+  // de "https://unishare-v90p.onrender.com/api" -> "https://unishare-v90p.onrender.com"
+  const BACKEND_BASE_URL = API_URL.replace(/\/api\/?$/, '');
+
+  function getFileUrl(fileUrl) {
+    if (!fileUrl) return '';
+    // si ya viene completa, la dejamos
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+      return fileUrl;
+    }
+    // si viene como "/uploads/xxx.mp4" o "uploads/xxx.mp4"
+    const path = fileUrl.startsWith('/') ? fileUrl : `/${fileUrl}`;
+    return `${BACKEND_BASE_URL}${path}`;
+  }
+
+  const finalFileUrl = getFileUrl(resource?.file_url);
+
   // ---------- CARGA INICIAL ----------
   useEffect(() => {
     if (!resource) return;
@@ -45,6 +63,10 @@ export default function ResourceDetailPage({ resource, user }) {
     load();
   }, [resource?.id]);
 
+  if (!resource) {
+    return null;
+  }
+
   // ---------- COMENTARIOS ----------
   async function handleAddComment(e) {
     e.preventDefault();
@@ -67,7 +89,6 @@ export default function ResourceDetailPage({ resource, user }) {
       setSavingRating(true);
       setRatingError('');
       await setRating(resource.id, value);
-      // Volvemos a pedir datos para actualizar promedio y voto del usuario
       const info = await fetchRating(resource.id);
       setRatingInfo(info);
     } catch (err) {
@@ -102,9 +123,9 @@ export default function ResourceDetailPage({ resource, user }) {
         </div>
 
         <div className="resource-actions">
-          {resource.file_url && (
+          {finalFileUrl && (
             <a
-              href={resource.file_url}
+              href={finalFileUrl}
               target="_blank"
               rel="noreferrer"
               className="btn btn-secondary"
@@ -186,32 +207,32 @@ export default function ResourceDetailPage({ resource, user }) {
               </p>
             )}
 
-<ul className="comments-list">
-  {comments.map(comment => {
-    const username =
-      comment.user_full_name ||
-      comment.full_name ||
-      comment.username ||
-      comment.user_name ||
-      comment.user?.full_name ||
-      'Usuario';
+            <ul className="comments-list">
+              {comments.map(comment => {
+                const username =
+                  comment.user_full_name ||
+                  comment.full_name ||
+                  comment.username ||
+                  comment.user_name ||
+                  comment.user?.full_name ||
+                  'Usuario';
 
-    return (
-      <li key={comment.id} className="comment-item">
-        <div className="comment-header">
-          <strong>{username}</strong>
-          <span className="comment-date">
-            {new Date(comment.created_at).toLocaleString()}
-          </span>
-        </div>
+                return (
+                  <li key={comment.id} className="comment-item">
+                    <div className="comment-header">
+                      <strong>{username}</strong>
+                      <span className="comment-date">
+                        {new Date(comment.created_at).toLocaleString()}
+                      </span>
+                    </div>
 
-        <p className="comment-content">
-          {comment.content}
-        </p>
-      </li>
-    );
-  })}
-</ul>
+                    <p className="comment-content">
+                      {comment.content}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
           </>
         )}
 
