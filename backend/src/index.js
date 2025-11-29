@@ -12,26 +12,11 @@ import adminUserRoutes from './routes/adminUserRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Orígenes permitidos (local + producción)
-const allowedOrigins = [
-  'http://localhost:5173',                 // dev frontend
-  process.env.FRONTEND_URL                 // prod frontend (Vercel)
-].filter(Boolean);
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Permitir herramientas tipo Postman (sin origin)
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error('Not allowed by CORS'));
-    }
-  })
-);
-
+// ✅ CORS SIMPLE: PERMITIR TODO (para demo académica)
+app.use(cors());
 app.use(express.json());
 
-// Servir archivos subidos
+// Servir archivos subidos (PDF, imágenes, videos)
 app.use('/uploads', express.static('uploads'));
 
 // Healthcheck
@@ -40,7 +25,7 @@ app.get('/api/health', async (req, res) => {
     const result = await pool.query('SELECT NOW()');
     res.json({
       status: 'ok',
-      dbTime: result.rows[0].now
+      dbTime: result.rows[0].now,
     });
   } catch (error) {
     console.error('Error en healthcheck:', error);
@@ -48,18 +33,25 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Rutas
+// Rutas de autenticación
 app.use('/api/auth', authRoutes);
+
+// Rutas de recursos (listar, detalle, upload, comentarios, rating)
 app.use('/api/resources', resourceRoutes);
+
+// Rutas de administración (stats, overview, resources-by-*)
 app.use('/api/admin', adminRoutes);
+
+// Rutas de gestión de usuarios admin (roles)
 app.use('/api/admin', adminUserRoutes);
 
-// Error genérico
+// Manejador genérico de errores
 app.use((err, req, res, next) => {
-  console.error('Error no manejado:', err.message);
+  console.error('Error no manejado:', err);
   res.status(500).json({ error: 'Error interno del servidor' });
 });
 
+// Levantar servidor
 app.listen(PORT, () => {
   console.log(`✅ UniShare backend escuchando en http://localhost:${PORT}`);
 });
