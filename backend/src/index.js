@@ -12,6 +12,20 @@ import adminUserRoutes from './routes/adminUserRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+
+// 🔥 FIX DEFINITIVO DE CORS — absorber prefights globales
+app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+  
+    next();
+  });
+  
 // ✅ CORS SIMPLE: PERMITIR TODO (para demo académica)
 app.use(cors());
 app.use(express.json());
