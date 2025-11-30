@@ -27,6 +27,8 @@ function App() {
   });
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [sidebarNewOpen, setSidebarNewOpen] = useState(false);
+
 
   useEffect(() => {
     if (user) {
@@ -176,8 +178,48 @@ function App() {
         {/* SIDEBAR IZQUIERDA */}
         <aside className="sidebar">
           <div className="sidebar-inner">
-            <div className="sidebar-title">Navegación</div>
-            <div className="sidebar-group">
+          <div className="sidebar-title">Navegación</div>
+
+<div className="sidebar-new-wrapper">
+  <button
+    type="button"
+    className="sidebar-new-button"
+    onClick={() => setSidebarNewOpen(open => !open)}
+  >
+    <span className="sidebar-new-plus">＋</span>
+    <span>Nuevo</span>
+    <span className="sidebar-new-caret">▾</span>
+  </button>
+
+  {sidebarNewOpen && (
+    <div className="sidebar-new-menu">
+      <button
+        type="button"
+        className="sidebar-new-item"
+        onClick={() => {
+          setSidebarNewOpen(false);
+          setPage('upload');
+        }}
+      >
+        📤 Subir recurso
+      </button>
+
+      <button
+        type="button"
+        className="sidebar-new-item"
+        onClick={() => {
+          setSidebarNewOpen(false);
+          setPage('list');
+        }}
+      >
+        📚 Ver recursos
+      </button>
+    </div>
+  )}
+</div>
+
+<div className="sidebar-group">
+
               <button
                 className={`sidebar-item ${page === 'list' ? 'active' : ''}`}
                 onClick={() => setPage('list')}
@@ -230,46 +272,56 @@ function App() {
         {/* CONTENIDO PRINCIPAL */}
         <main className="app-main">
           <div className="app-main-inner">
-            {page === 'list' && (
-              <div className="page">
-                {/* HERO */}
-                <section className="hero">
-                  <div>
-                    <h2 className="hero-text-title">
-                      Comparte, busca y organiza tus recursos académicos.
-                    </h2>
-                    <p className="hero-text-sub">
-                      UniShare centraliza exámenes, prácticas y resúmenes de
-                      cursos de la Universidad de Lima. Filtra por curso,
-                      docente y ciclo para encontrar exactamente lo que
-                      necesitas.
-                    </p>
-                    <div className="hero-badges">
-                      <span className="hero-badge">Repositorio colaborativo</span>
-                      <span className="hero-badge">Orientado a ULima</span>
-                      <span className="hero-badge">Recursos calificados</span>
-                    </div>
-                    <div className="hero-stats">
-                      <div>
-                        <div className="hero-stat-number">24/7</div>
-                        <div>Acceso a recursos</div>
-                      </div>
-                      <div>
-                        <div className="hero-stat-number">+Cursos</div>
-                        <div>Organizados por docente</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="hero-image" />
-                </section>
+          {page === 'list' && (
+  <div className="page">
+    {/* HERO */}
+    <section className="hero">
+      <div>
+        <p className="hero-pill">
+          <span className="hero-pill-dot" />
+          Repositorio académico colaborativo · Universidad de Lima
+        </p>
 
-                <section>
-                  <div className="card">
-                    <ResourceListPage onSelect={handleSelectResource} />
-                  </div>
-                </section>
-              </div>
-            )}
+        <h2 className="hero-text-title">
+          Comparte, busca y organiza tus
+          <span className="hero-highlight"> recursos académicos</span>.
+        </h2>
+
+        <p className="hero-text-sub">
+          UniShare centraliza exámenes, prácticas y resúmenes de cursos de la
+          Universidad de Lima. Filtra por curso, docente y ciclo para encontrar
+          exactamente lo que necesitas.
+        </p>
+
+        <div className="hero-badges">
+          <span className="hero-badge">Repositorio colaborativo</span>
+          <span className="hero-badge">Orientado a ULima</span>
+          <span className="hero-badge">Recursos calificados</span>
+        </div>
+
+        <div className="hero-stats">
+          <div>
+            <div className="hero-stat-number">24/7</div>
+            <div>Acceso a recursos</div>
+          </div>
+          <div>
+            <div className="hero-stat-number">+Cursos</div>
+            <div>Organizados por docente</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="hero-image" />
+    </section>
+
+    <section>
+      <div className="card">
+        <ResourceListPage onSelect={handleSelectResource} />
+      </div>
+    </section>
+  </div>
+)}
+
 
             {page === 'upload' && (
               <div className="page">
