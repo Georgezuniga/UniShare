@@ -33,18 +33,19 @@ export default function ResourceDetailPage({ resource, user }) {
   const [savingRating, setSavingRating] = useState(false);
   const [hoverRating, setHoverRating] = useState(null);
 
-  // Reportes
+  // Reporte
   const [reportReason, setReportReason] = useState(REPORT_REASONS[0]);
   const [reportDetails, setReportDetails] = useState('');
   const [reportError, setReportError] = useState('');
-  const [reportSuccess, setReportSuccess] = useState('');
   const [sendingReport, setSendingReport] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
+  // Reportes (vista admin)
   const [reports, setReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(false);
   const [reportsError, setReportsError] = useState('');
 
-  // ---------- HELPER PARA URL DEL ARCHIVO ----------
+  // ---------- URL DEL ARCHIVO ----------
   const API_URL = import.meta.env.VITE_API_URL || '';
   const BACKEND_BASE_URL = API_URL.includes('/api')
     ? API_URL.split('/api')[0]
@@ -53,19 +54,12 @@ export default function ResourceDetailPage({ resource, user }) {
   function getFileUrl(fileUrl) {
     if (!fileUrl) return '';
 
-    // si ya es URL absoluta (por si en el futuro usas Cloudinary)
     if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
       return fileUrl;
     }
 
     let path = fileUrl;
-
-    // asegurar que empiece por "/"
-    if (!path.startsWith('/')) {
-      path = '/' + path;
-    }
-
-    // Normalizar bug antiguo: "/api/uploads" -> "/uploads"
+    if (!path.startsWith('/')) path = '/' + path;
     path = path.replace('/api/uploads', '/uploads');
     path = path.replace(/^\/api\//, '/');
 
@@ -73,8 +67,12 @@ export default function ResourceDetailPage({ resource, user }) {
   }
 
   const finalFileUrl = getFileUrl(resource?.file_url);
+  const fileType = resource?.file_type || '';
+  const isVideo = fileType.startsWith('video/');
+  const isImage = fileType.startsWith('image/');
+  const isPdf = fileType.toLowerCase().includes('pdf');
 
-  // ---------- CARGA INICIAL (comentarios + rating) ----------
+  // ---------- CARGA INICIAL ----------
   useEffect(() => {
     if (!resource) return;
 
@@ -98,7 +96,7 @@ export default function ResourceDetailPage({ resource, user }) {
     load();
   }, [resource?.id]);
 
-  // ---------- CARGA DE REPORTES (solo admin) ----------
+  // ---------- CARGA REPORTES (ADMIN) ----------
   useEffect(() => {
     if (!resource || !user || user.role !== 'admin') return;
 
@@ -119,9 +117,7 @@ export default function ResourceDetailPage({ resource, user }) {
     loadReports();
   }, [resource?.id, user?.role]);
 
-  if (!resource) {
-    return null;
-  }
+  if (!resource) return null;
 
   // ---------- COMENTARIOS ----------
   async function handleAddComment(e) {
@@ -139,7 +135,7 @@ export default function ResourceDetailPage({ resource, user }) {
     }
   }
 
-  // ---------- RATING CON ESTRELLAS ----------
+  // ---------- RATING ----------
   async function handleStarClick(value) {
     try {
       setSavingRating(true);
@@ -159,7 +155,7 @@ export default function ResourceDetailPage({ resource, user }) {
   const displayUserRating =
     hoverRating != null ? hoverRating : ratingInfo.userRating;
 
-  // ---------- REPORTAR RECURSO (usuario) ----------
+  // ---------- REPORTAR (MODAL) ----------
   async function handleReportSubmit(e) {
     e.preventDefault();
     if (!user) {
@@ -170,13 +166,14 @@ export default function ResourceDetailPage({ resource, user }) {
     try {
       setSendingReport(true);
       setReportError('');
-      setReportSuccess('');
 
       await reportResource(resource.id, reportReason, reportDetails);
 
-      setReportSuccess('Reporte enviado. Gracias por tu ayuda.');
+      // Cerrar modal al enviar
+      setReportModalOpen(false);
       setReportDetails('');
       setReportReason(REPORT_REASONS[0]);
+      alert('Reporte enviado. Gracias por tu ayuda.');
     } catch (err) {
       console.error(err);
       setReportError('Error al enviar el reporte.');
@@ -185,7 +182,7 @@ export default function ResourceDetailPage({ resource, user }) {
     }
   }
 
-  // ---------- ELIMINAR RECURSO (admin) ----------
+  // ---------- ELIMINAR RECURSO (ADMIN) ----------
   async function handleDeleteResource() {
     if (!user || user.role !== 'admin') return;
 
@@ -198,7 +195,6 @@ export default function ResourceDetailPage({ resource, user }) {
     try {
       await deleteResource(resource.id);
       alert('Recurso eliminado correctamente.');
-      // Redirigir a la lista principal (ajusta la ruta si es diferente)
       window.location.href = '/';
     } catch (err) {
       console.error(err);
@@ -206,50 +202,102 @@ export default function ResourceDetailPage({ resource, user }) {
     }
   }
 
+  // ---------- VIEW ----------
   return (
     <div>
       {/* CABECERA DEL RECURSO */}
       <section className="resource-detail-header">
-        <div className="resource-header-top">
+        <div className="resource-detail-header-top">
           <div>
             <h2 className="page-title">{resource.title}</h2>
-            <p className="page-subtitle">{resource.description}</p>
+            <p className="page-subtitle">
+              Visualiza la información, abre el archivo original, califica el
+              recurso y deja comentarios.
+            </p>
           </div>
 
-          {user?.role === 'admin' && (
-            <button
-              type="button"
-              className="btn btn-danger"
-              onClick={handleDeleteResource}
-            >
-              Eliminar recurso
-            </button>
-          )}
+          <div className="resource-header-actions-right">
+            {user?.role === 'admin' && (
+              <button
+                type="button"
+                className="btn btn-danger-outline"
+                onClick={handleDeleteResource}
+              >
+                Eliminar
+              </button>
+            )}
+
+            {user && user.role !== 'admin' && (
+              <button
+                type="button"
+                className="report-chip"
+                onClick={() => setReportModalOpen(true)}
+              >
+                <span className="report-chip-icon">🚩</span>
+                <span>Reportar recurso</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="resource-meta">
-          <p>
-            <strong>Curso:</strong> {resource.course || '—'}
-          </p>
-          <p>
-            <strong>Ciclo:</strong> {resource.cycle || '—'}
-          </p>
-          <p>
-            <strong>Docente:</strong> {resource.teacher || '—'}
-          </p>
-        </div>
+        <div className="resource-detail-layout">
+          {/* Vista previa */}
+          <div className="resource-preview">
+            <div className="resource-preview-icon-wrapper">
+              <div className="resource-preview-icon">
+                {isVideo && '🎬'}
+                {isImage && '🖼️'}
+                {isPdf && '📄'}
+                {!isVideo && !isImage && !isPdf && '📁'}
+              </div>
+            </div>
+            <div className="resource-preview-type">
+              {isVideo && 'Video'}
+              {isImage && 'Imagen'}
+              {isPdf && 'Documento PDF'}
+              {!isVideo && !isImage && !isPdf && 'Archivo'}
+            </div>
 
-        <div className="resource-actions">
-          {finalFileUrl && (
-            <a
-              href={finalFileUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn-secondary"
-            >
-              Abrir archivo
-            </a>
-          )}
+            {finalFileUrl && (
+              <a
+                href={finalFileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-secondary btn-full"
+              >
+                Abrir archivo
+              </a>
+            )}
+          </div>
+
+          {/* Información académica */}
+          <div className="resource-info-block">
+            <p className="resource-info-title">{resource.title}</p>
+            {resource.description && (
+              <p className="resource-info-description">
+                {resource.description}
+              </p>
+            )}
+
+            <dl className="resource-meta-grid">
+              <div>
+                <dt>Curso</dt>
+                <dd>{resource.course || '—'}</dd>
+              </div>
+              <div>
+                <dt>Ciclo</dt>
+                <dd>{resource.cycle || '—'}</dd>
+              </div>
+              <div>
+                <dt>Docente</dt>
+                <dd>{resource.teacher || '—'}</dd>
+              </div>
+              <div>
+                <dt>Subido por</dt>
+                <dd>{resource.uploader_name || 'Usuario ULima'}</dd>
+              </div>
+            </dl>
+          </div>
         </div>
       </section>
 
@@ -267,7 +315,9 @@ export default function ResourceDetailPage({ resource, user }) {
             {ratingInfo.count === 1 ? 'voto' : 'votos'})
           </p>
         ) : (
-          <p className="rating-summary">Este recurso aún no tiene valoraciones.</p>
+          <p className="rating-summary">
+            Este recurso aún no tiene valoraciones.
+          </p>
         )}
 
         <div className="rating-stars-row">
@@ -310,60 +360,7 @@ export default function ResourceDetailPage({ resource, user }) {
         {ratingError && <p className="text-error">{ratingError}</p>}
       </section>
 
-      {/* REPORTAR RECURSO (USUARIO) */}
-      {user && user.role !== 'admin' && (
-        <section className="report-section">
-          <h3 className="section-title">Reportar recurso</h3>
-          <p className="section-subtitle">
-            Si ves contenido ofensivo, inapropiado o incorrecto, puedes reportarlo.
-          </p>
-
-          <form className="form" onSubmit={handleReportSubmit}>
-            <label className="form-label">
-              Motivo del reporte
-              <select
-                className="form-input"
-                value={reportReason}
-                onChange={e => setReportReason(e.target.value)}
-              >
-                {REPORT_REASONS.map(reason => (
-                  <option key={reason} value={reason}>
-                    {reason}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="form-label">
-              Detalles (opcional)
-              <textarea
-                className="form-input"
-                rows={3}
-                placeholder="Explica brevemente qué problema encontraste."
-                value={reportDetails}
-                onChange={e => setReportDetails(e.target.value)}
-              />
-            </label>
-
-            {reportError && (
-              <p className="text-error">{reportError}</p>
-            )}
-            {reportSuccess && (
-              <p className="text-success">{reportSuccess}</p>
-            )}
-
-            <button
-              type="submit"
-              className="btn btn-secondary"
-              disabled={sendingReport}
-            >
-              {sendingReport ? 'Enviando...' : 'Enviar reporte'}
-            </button>
-          </form>
-        </section>
-      )}
-
-      {/* REPORTES VISIBLES PARA ADMIN */}
+      {/* REPORTES (solo ADMIN) */}
       {user?.role === 'admin' && (
         <section className="reports-section">
           <h3 className="section-title">Reportes de este recurso</h3>
@@ -381,7 +378,11 @@ export default function ResourceDetailPage({ resource, user }) {
               {reports.map(report => (
                 <li key={report.id} className="comment-item">
                   <div className="comment-header">
-                    <strong>{report.user_full_name || report.user_email || 'Usuario'}</strong>
+                    <strong>
+                      {report.user_full_name ||
+                        report.user_email ||
+                        'Usuario'}
+                    </strong>
                     <span className="comment-date">
                       {new Date(report.created_at).toLocaleString()}
                     </span>
@@ -460,6 +461,81 @@ export default function ResourceDetailPage({ resource, user }) {
           </button>
         </form>
       </section>
+
+      {/* MODAL DE REPORTE (USUARIO) */}
+      {reportModalOpen && user && user.role !== 'admin' && (
+        <div className="report-modal-backdrop">
+          <div className="report-modal">
+            <div className="report-modal-header">
+              <div className="report-modal-title-group">
+                <span className="report-chip-icon">🚩</span>
+                <h3>Reportar recurso</h3>
+              </div>
+              <button
+                type="button"
+                className="report-modal-close"
+                onClick={() => setReportModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="report-modal-text">
+              Si ves contenido ofensivo, inapropiado o incorrecto, puedes
+              reportarlo. Tu reporte será revisado por los administradores.
+            </p>
+
+            <form className="form" onSubmit={handleReportSubmit}>
+              <label className="form-label">
+                Motivo del reporte
+                <select
+                  className="form-input"
+                  value={reportReason}
+                  onChange={e => setReportReason(e.target.value)}
+                >
+                  {REPORT_REASONS.map(reason => (
+                    <option key={reason} value={reason}>
+                      {reason}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="form-label">
+                Detalles (opcional)
+                <textarea
+                  className="form-input"
+                  rows={3}
+                  placeholder="Explica brevemente qué problema encontraste."
+                  value={reportDetails}
+                  onChange={e => setReportDetails(e.target.value)}
+                />
+              </label>
+
+              {reportError && (
+                <p className="text-error">{reportError}</p>
+              )}
+
+              <div className="report-modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary-ghost"
+                  onClick={() => setReportModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-secondary"
+                  disabled={sendingReport}
+                >
+                  {sendingReport ? 'Enviando...' : 'Enviar reporte'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

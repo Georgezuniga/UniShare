@@ -963,4 +963,232 @@ body {
       transform: translateY(0);
     }
   }
-  
+  /* =========================================================
+   DETALLE DEL RECURSO: LAYOUT ACADÉMICO + MODAL DE REPORTES
+   ========================================================= */
+
+/* Top bar dentro del card de detalle */
+.resource-detail-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.resource-header-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Info principal y preview en dos columnas */
+.resource-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 2.2fr);
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+/* Bloque de vista previa */
+.resource-preview {
+  border-radius: 1rem;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.3), transparent 60%),
+    rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(37, 99, 235, 0.7);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.resource-preview-icon-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.resource-preview-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.7rem;
+}
+
+.resource-preview-type {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  margin-bottom: 0.2rem;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+/* Bloque de información académica */
+.resource-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.resource-info-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.resource-info-description {
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+
+.resource-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+}
+
+.resource-meta-grid dt {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.resource-meta-grid dd {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+/* Botón tipo chip de reporte */
+.report-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.6);
+  background: rgba(15, 23, 42, 0.9);
+  color: #fecaca;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.08s ease, box-shadow 0.1s ease;
+}
+
+.report-chip:hover {
+  background: rgba(185, 28, 28, 0.9);
+  color: #fee2e2;
+  box-shadow: 0 0 18px rgba(248, 113, 113, 0.5);
+  transform: translateY(-1px);
+}
+
+.report-chip-icon {
+  font-size: 0.9rem;
+}
+
+/* Variación de botón para eliminar admin */
+.btn-danger-outline {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.78rem;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.7);
+  background: transparent;
+  color: #fecaca;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-danger-outline:hover {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+/* MODAL DE REPORTE */
+.report-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.report-modal {
+  width: 100%;
+  max-width: 480px;
+  background: #020617;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+  padding: 1.1rem 1.25rem 1.05rem;
+  animation: fade-in-up 0.16s ease-out;
+}
+
+.report-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+
+.report-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.report-modal-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.report-modal-close {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.report-modal-close:hover {
+  color: var(--text);
+}
+
+.report-modal-text {
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  margin-bottom: 0.7rem;
+}
+
+.report-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+/* Botón ghost para cancelar */
+.btn-secondary-ghost {
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.btn-secondary-ghost:hover {
+  background: rgba(15, 23, 42, 0.95);
+  color: var(--text);
+}
